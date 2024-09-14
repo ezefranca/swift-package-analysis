@@ -5,8 +5,8 @@ import json
 import pandas as pd
 
 # GitHub API token from GitHub Actions environment variable
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+TOKEN = os.getenv("TOKEN")
+headers = {'Authorization': f'token {TOKEN}'}
 
 # Load checkpoint if it exists
 checkpoint_file = 'results/checkpoint.json'

@@ -16,13 +16,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-            python-version: '3.9'
+          python-version: '3.x'
 
       - name: Install dependencies
         run: |
           pip install pandas requests
 
       - name: Run Swift Package Analysis Script
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
         run: |
           python swift_package_analysis.py  # Run your Python script
 
