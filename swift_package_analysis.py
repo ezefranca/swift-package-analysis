@@ -75,6 +75,10 @@ def get_default_branch(user_name, repo_name):
 
 # Parse the Package.swift file to extract dependencies and versions
 def parse_package_swift(user_name, repo_name):
+    # Remove any trailing .git from the repository name (common in dependency URLs)
+    if repo_name.endswith('.git'):
+        repo_name = repo_name[:-4]
+    
     # Dynamically get the default branch
     branch = get_default_branch(user_name, repo_name)
     package_url = f"https://raw.githubusercontent.com/{user_name}/{repo_name}/{branch}/Package.swift"
@@ -109,6 +113,10 @@ def extract_dependencies(package_data, repo_name):
             package_url = line[url_start:url_end].replace('"', '').strip()
             version = line[version_start:version_end].replace('"', '').strip()
 
+            # Clean up the package_url by removing '.git' if present
+            if package_url.endswith('.git'):
+                package_url = package_url[:-4]
+
             dependencies.append({
                 'package_url': package_url,
                 'version': version,
@@ -122,9 +130,14 @@ def fetch_sub_dependencies(package_url, depth=0):
     if depth > 3:
         return []
 
-    # Analyze the dependencies of the sub-dependency
+    # Clean the package URL to extract user_name/repo_name
     repo_name = package_url.replace("https://github.com/", "")
-    return parse_package_swift(repo_name, package_url)
+    if repo_name.endswith('.git'):
+        repo_name = repo_name[:-4]  # Remove .git if present
+
+    user_name, repo_name = repo_name.split('/')
+
+    return parse_package_swift(user_name, repo_name)
 
 # Save progress in the checkpoint file
 def save_checkpoint(processed_repos):
