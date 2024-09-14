@@ -8,6 +8,10 @@ import pandas as pd
 TOKEN = os.getenv("TOKEN")
 headers = {'Authorization': f'token {TOKEN}'}
 
+# Ensure the 'results' directory exists
+if not os.path.exists('results'):
+    os.makedirs('results')
+
 # Load checkpoint if it exists
 checkpoint_file = 'results/checkpoint.json'
 try:
@@ -68,7 +72,7 @@ def parse_package_swift(repo_name, repo_url):
         dependencies = extract_dependencies(package_data, repo_name)
         return dependencies
     else:
-        print(f"Failed to retrieve Package.swift for {repo_name}")
+        print(f"Failed to retrieve Package.swift for {repo_name} at {package_url}")
         return []
 
 # Extract dependencies from the Package.swift file
@@ -76,7 +80,6 @@ def extract_dependencies(package_data, repo_name):
     dependencies = []
 
     # The format of Package.swift includes the list of dependencies in Swift's native format
-    # We'll do a basic string search for now. You can improve this with a more robust parser.
     start_key = ".package("
     end_key = "),"
     
