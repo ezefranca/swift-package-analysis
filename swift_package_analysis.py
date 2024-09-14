@@ -62,9 +62,23 @@ def check_rate_limit():
             print(f"Rate limit reached. Waiting {wait_time} seconds.")
             time.sleep(wait_time)
 
+# Fetch the default branch of the repository
+def get_default_branch(user_name, repo_name):
+    repo_url = f"https://api.github.com/repos/{user_name}/{repo_name}"
+    response = requests.get(repo_url, headers=headers)
+
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch repository info for {user_name}/{repo_name}: {response.text}")
+    
+    repo_data = response.json()
+    return repo_data['default_branch']
+
 # Parse the Package.swift file to extract dependencies and versions
-def parse_package_swift(repo_name, repo_url):
-    package_url = f"https://raw.githubusercontent.com/{repo_name}/main/Package.swift"
+def parse_package_swift(user_name, repo_name):
+    # Dynamically get the default branch
+    branch = get_default_branch(user_name, repo_name)
+    package_url = f"https://raw.githubusercontent.com/{user_name}/{repo_name}/{branch}/Package.swift"
+    
     response = requests.get(package_url, headers=headers)
 
     if response.status_code == 200:
@@ -72,7 +86,7 @@ def parse_package_swift(repo_name, repo_url):
         dependencies = extract_dependencies(package_data, repo_name)
         return dependencies
     else:
-        print(f"Failed to retrieve Package.swift for {repo_name} at {package_url}")
+        print(f"Failed to retrieve Package.swift for {user_name}/{repo_name} at {package_url}")
         return []
 
 # Extract dependencies from the Package.swift file
@@ -141,8 +155,11 @@ def process_repositories():
 
             print(f"Processing {repo_name}...")
 
+            # Split the user name and repo name
+            user_name, repo_name = repo_name.split('/')
+            
             # Fetch and analyze dependencies
-            dependencies = parse_package_swift(repo_name, repo['html_url'])
+            dependencies = parse_package_swift(user_name, repo_name)
             for dep in dependencies:
                 # Fetch sub-dependencies for each dependency
                 sub_deps = fetch_sub_dependencies(dep['package_url'], depth=1)
@@ -158,7 +175,7 @@ def process_repositories():
             }
             all_data.append(repo_info)
 
-            processed_repos.append(repo_name)  # Add to processed list
+            processed_repos.append(repo['full_name'])  # Add to processed list
             save_checkpoint(processed_repos)  # Save progress to checkpoint
 
         page += 1  # Go to the next page of repositories
