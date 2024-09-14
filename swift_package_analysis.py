@@ -23,18 +23,36 @@ search_url = "https://api.github.com/search/repositories?q=Package.swift+languag
 def fetch_repositories(page=1):
     response = requests.get(f"{search_url}&page={page}", headers=headers)
     if response.status_code != 200:
-        raise Exception(f"GitHub API error: {response.status_code}")
+        raise Exception(f"GitHub API error: {response.status_code}. Response: {response.text}")
     return response.json()
 
 # Handle rate limit
 def check_rate_limit():
     rate_limit_url = "https://api.github.com/rate_limit"
     response = requests.get(rate_limit_url, headers=headers)
-    rate_data = response.json()
-    remaining = rate_data['rate']['remaining']
-    reset_time = rate_data['rate']['reset']
     
-    if remaining < 5:  # If close to rate limit, wait for reset
+    # Check for a successful response (200 OK)
+    if response.status_code != 200:
+        raise Exception(f"GitHub API error: {response.status_code}. Response: {response.text}")
+    
+    # Parse JSON response
+    rate_data = response.json()
+    
+    # Print the rate limit response for debugging
+    print("Rate limit response:", rate_data)
+    
+    # Ensure 'core' or 'rate' key exists
+    if 'rate' in rate_data and 'remaining' in rate_data['rate']:
+        remaining = rate_data['rate']['remaining']
+        reset_time = rate_data['rate']['reset']
+    elif 'core' in rate_data['resources'] and 'remaining' in rate_data['resources']['core']:
+        remaining = rate_data['resources']['core']['remaining']
+        reset_time = rate_data['resources']['core']['reset']
+    else:
+        raise KeyError(f"Unexpected response structure: {rate_data}")
+    
+    # If close to the rate limit, wait for reset
+    if remaining < 5:
         wait_time = reset_time - time.time()
         if wait_time > 0:
             print(f"Rate limit reached. Waiting {wait_time} seconds.")
